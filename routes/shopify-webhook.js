@@ -65,6 +65,33 @@ async function processShopifyWebhook(client, topic, payload) {
   // Normalize Shopify payload to GHL-like shape so existing hasher works
   const normalized = normalizeShopifyPayload(payload, topic);
 
+  // Check data quality — only send to Meta if we have real customer data
+  const hasEmail = !!(normalized.email);
+  const hasPhone = !!(normalized.phone);
+  const hasName = !!(normalized.first_name || normalized.last_name);
+
+  if (!hasEmail && !hasPhone) {
+    console.log(`[Shopify Webhook] Skipping "${topic}" — no email or phone (low quality)`);
+    insertEvent({
+      timestamp,
+      client_id: client.id,
+      client_name: client.display_name,
+      contact_name: null,
+      contact_email: null,
+      event_type: eventMapping.meta || topic,
+      ghl_workflow_name: `[Shopify] ${topic}`,
+      meta_status: 'skipped',
+      meta_response: 'Low data quality — no email or phone',
+      ga4_status: 'skipped',
+      ga4_response: 'Low data quality',
+      google_ads_status: 'skipped',
+      google_ads_response: 'Low data quality',
+      data_quality: 'low',
+      raw_payload: JSON.stringify(payload)
+    });
+    return;
+  }
+
   // Build options
   const options = {
     conversionValue: customData.value || 0,
