@@ -1,0 +1,15 @@
+# Environment — contains secrets
+.env
+
+# Database
+db/*.db
+db/*.db-shm
+db/*.db-wal
+
+# Node
+node_modules/
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db

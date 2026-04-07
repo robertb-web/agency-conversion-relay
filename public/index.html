@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Conversion Relay Dashboard</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <h2>Conversion Relay</h2>
+      <p>GHL + Shopify → Meta · GA4 · Google Ads</p>
+    </div>
+    <nav>
+      <div class="nav-item active" data-page="health">
+        <span class="icon">📊</span> System Health
+      </div>
+      <div class="nav-item" data-page="events">
+        <span class="icon">📋</span> Event Log
+      </div>
+      <div class="nav-item" data-page="clients">
+        <span class="icon">⚙️</span> Client Settings
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="logout-btn" id="logout-btn">Sign Out</button>
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <main class="main">
+
+    <!-- Health page -->
+    <div class="page active" id="page-health">
+      <h1 class="page-title">System Health</h1>
+      <div class="stats-grid" id="stats-grid">
+        <div class="stat-card"><div class="label">Events Today</div><div class="value" id="stat-today">—</div></div>
+        <div class="stat-card"><div class="label">Events This Week</div><div class="value" id="stat-week">—</div></div>
+        <div class="stat-card"><div class="label">Events This Month</div><div class="value" id="stat-month">—</div></div>
+        <div class="stat-card"><div class="label">Last Event</div><div class="value" style="font-size:0.9rem" id="stat-last">—</div><div class="sub" id="stat-last-ago"></div></div>
+      </div>
+
+      <div class="api-health">
+        <div class="api-item">
+          <div class="api-name">Meta CAPI</div>
+          <div class="api-rate" id="meta-rate" style="color:var(--green)">—</div>
+          <div class="api-counts" id="meta-counts"></div>
+        </div>
+        <div class="api-item">
+          <div class="api-name">GA4</div>
+          <div class="api-rate" id="ga4-rate" style="color:var(--green)">—</div>
+          <div class="api-counts" id="ga4-counts"></div>
+        </div>
+        <div class="api-item">
+          <div class="api-name">Google Ads</div>
+          <div class="api-rate" id="gads-rate" style="color:var(--green)">—</div>
+          <div class="api-counts" id="gads-counts"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <strong style="font-size:0.9rem">Recent Events</strong>
+          <button class="btn btn-secondary btn-sm" onclick="App.loadHealth()">↻ Refresh</button>
+        </div>
+        <div class="table-wrap">
+          <table id="health-events-table">
+            <thead>
+              <tr>
+                <th>Time</th><th>Client</th><th>Contact</th><th>Event</th>
+                <th>Meta</th><th>GA4</th><th>Google Ads</th><th>Quality</th>
+              </tr>
+            </thead>
+            <tbody id="health-events-body">
+              <tr><td colspan="8" class="loader">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Events page -->
+    <div class="page" id="page-events">
+      <h1 class="page-title">Event Log</h1>
+      <div class="filters">
+        <select id="filter-client"><option value="">All Clients</option></select>
+        <select id="filter-event">
+          <option value="">All Event Types</option>
+          <option>Lead</option><option>Purchase</option><option>CompleteRegistration</option>
+          <option>Schedule</option><option>webinar_attended</option><option>webinar_noshow</option>
+          <option>unrouted</option>
+        </select>
+        <select id="filter-status">
+          <option value="">All Statuses</option>
+          <option value="success">Success</option>
+          <option value="failure">Has Failure</option>
+        </select>
+        <input type="date" id="filter-start" placeholder="Start date" />
+        <input type="date" id="filter-end" placeholder="End date" />
+        <button class="btn btn-primary btn-sm" onclick="App.loadEvents(1)">Filter</button>
+        <button class="btn btn-secondary btn-sm" onclick="App.clearFilters()">Clear</button>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Time</th><th>Client</th><th>Contact</th><th>Workflow / Event</th>
+                <th>Meta</th><th>GA4</th><th>Ads</th><th>Quality</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="events-body">
+              <tr><td colspan="9" class="loader">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination">
+          <button class="btn btn-secondary btn-sm" id="prev-btn" onclick="App.prevPage()">‹ Prev</button>
+          <span id="page-info">Page 1</span>
+          <button class="btn btn-secondary btn-sm" id="next-btn" onclick="App.nextPage()">Next ›</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Clients page -->
+    <div class="page" id="page-clients">
+      <h1 class="page-title">Client Settings</h1>
+      <div style="margin-bottom:16px">
+        <button class="btn btn-primary" onclick="App.openClientModal(null)">+ Add Client</button>
+      </div>
+      <div id="clients-list" class="loader">Loading…</div>
+    </div>
+
+  </main>
+
+  <!-- Event detail modal -->
+  <div class="modal-overlay" id="event-modal">
+    <div class="modal" style="max-width:860px">
+      <div class="modal-header">
+        <h2>Event Detail</h2>
+        <button class="modal-close" onclick="App.closeModal('event-modal')">×</button>
+      </div>
+      <div id="event-detail-content"></div>
+    </div>
+  </div>
+
+  <!-- Client modal -->
+  <div class="modal-overlay" id="client-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="client-modal-title">Add Client</h2>
+        <button class="modal-close" onclick="App.closeModal('client-modal')">×</button>
+      </div>
+      <form id="client-form">
+        <input type="hidden" id="client-id" />
+
+        <div class="form-section">
+          <h3>Basic Info</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Display Name *</label>
+              <input class="form-input" id="f-display-name" required placeholder="Serenity Life Doula LLC" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Client Type</label>
+              <select class="form-select" id="f-client-type">
+                <option value="ghl">GHL Only</option>
+                <option value="shopify">Shopify Only</option>
+                <option value="both">Both GHL + Shopify</option>
+              </select>
+            </div>
+            <div id="ghl-fields">
+              <div class="form-group">
+                <label class="form-label">GHL Location ID *</label>
+                <input class="form-input" id="f-location-id" placeholder="Ux46JNnQmZYJisvk3sZ7" />
+                <span class="form-hint">Found in GHL Settings → Business Profile → Location ID</span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Active</label>
+              <select class="form-select" id="f-active">
+                <option value="1">Yes</option>
+                <option value="0">No</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3>Meta Conversions API</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Meta Pixel ID</label>
+              <input class="form-input" id="f-meta-pixel" placeholder="123456789012345" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">CAPI Access Token</label>
+              <input class="form-input" id="f-meta-token" type="password" placeholder="EAABsbCS1iZA..." />
+              <span class="form-hint">Leave blank to keep existing value</span>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Test Event Code</label>
+              <input class="form-input" id="f-meta-test-code" placeholder="TEST48302" />
+              <span class="form-hint">From Events Manager → your Pixel → Test Events tab</span>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Override Domain (for flagged accounts)</label>
+              <input class="form-input" id="f-override-domain" placeholder="https://www.example.com" />
+              <span class="form-hint">Events will use this domain instead of the original URL. Leave blank to use the original.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3>GA4 Measurement Protocol</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">GA4 Measurement ID</label>
+              <input class="form-input" id="f-ga4-id" placeholder="G-ABC123DEF4" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">GA4 API Secret</label>
+              <input class="form-input" id="f-ga4-secret" type="password" placeholder="(random string)" />
+              <span class="form-hint">Leave blank to keep existing value</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3>Google Ads Offline Conversions</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Customer ID</label>
+              <input class="form-input" id="f-gads-customer" placeholder="1234567890" />
+              <span class="form-hint">Without dashes</span>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Conversion Action ID</label>
+              <input class="form-input" id="f-gads-action-id" placeholder="123456789" />
+              <span class="form-hint">Numeric ID from Google Ads API</span>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Developer Token</label>
+              <input class="form-input" id="f-gads-dev-token" type="password" placeholder="ABC123..." />
+              <span class="form-hint">From Google Ads API Center</span>
+            </div>
+            <div class="form-group">
+              <label class="form-label">OAuth Client ID</label>
+              <input class="form-input" id="f-oauth-id" placeholder="701580808287-m1r..." />
+            </div>
+            <div class="form-group">
+              <label class="form-label">OAuth Client Secret</label>
+              <input class="form-input" id="f-oauth-secret" type="password" placeholder="GOCSPX-uhcwn..." />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Refresh Token</label>
+              <input class="form-input" id="f-refresh-token" type="password" placeholder="1//0..." />
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section" id="shopify-fields" style="display:none">
+          <h3>🛒 Shopify Integration</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Shopify Domain</label>
+              <input class="form-input" id="f-shopify-domain" placeholder="my-store.myshopify.com" />
+              <span class="form-hint">Your *.myshopify.com domain</span>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Webhook Secret</label>
+              <input class="form-input" id="f-shopify-secret" type="password" placeholder="Shopify webhook signing secret" />
+              <span class="form-hint">Settings → Notifications → Webhooks</span>
+            </div>
+            <div class="form-group" style="grid-column: 1 / -1;">
+              <label class="form-label">Webhook URL (copy into Shopify)</label>
+              <input class="form-input" id="f-shopify-webhook-url" readonly style="background:#1a1a2e;cursor:pointer;font-family:monospace;font-size:0.85rem" onclick="this.select();document.execCommand('copy')" />
+              <span class="form-hint">Register this URL in Shopify for: orders/paid, checkouts/create, customers/create</span>
+            </div>
+            <div class="form-group" style="grid-column: 1 / -1;">
+              <label class="form-label">Tracking Snippet (add to Shopify theme &lt;head&gt;)</label>
+              <textarea class="form-input" id="f-shopify-snippet" rows="10" readonly style="background:#1a1a2e;cursor:pointer;font-family:monospace;font-size:0.78rem;resize:vertical" onclick="this.select();document.execCommand('copy')"></textarea>
+              <span class="form-hint">Click to copy, then paste into Online Store → Themes → Edit Code → theme.liquid before &lt;/head&gt;</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3>Event Mappings (optional)</h3>
+          <div class="form-group full">
+            <label class="form-label">Custom mappings (JSON — overrides defaults)</label>
+            <textarea class="form-textarea" id="f-event-mappings" rows="5" placeholder='{"My GHL Workflow Name": {"meta": "Lead", "ga4": "generate_lead", "google_ads": "Lead"}}'></textarea>
+            <span class="form-hint">Leave empty to use the default mappings. Keys are GHL workflow.name values.</span>
+          </div>
+        </div>
+
+        <div id="test-results" style="display:none"></div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="test-conn-btn" onclick="App.testConnection()">🔌 Test Connection</button>
+          <button type="button" class="btn btn-secondary" onclick="App.closeModal('client-modal')">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="save-client-btn">Save Client</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
