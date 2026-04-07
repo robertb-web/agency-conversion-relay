@@ -4,6 +4,12 @@ const fs = require('fs');
 
 const DB_PATH = process.env.DB_PATH || (process.env.RAILWAY_ENVIRONMENT ? '/data/relay.db' : path.join(__dirname, 'relay.db'));
 
+// Ensure the directory exists
+const dbDir = path.dirname(DB_PATH);
+if (!fs.existsSync(dbDir)) {
+  fs.mkdirSync(dbDir, { recursive: true });
+}
+
 let db;
 
 function getDb() {
