@@ -111,7 +111,7 @@ async function sendGoogleAdsConversion(client, payload, eventMapping, options = 
     return { success: false, skipped: false, response: null, error: `Token refresh failed: ${errorMsg}` };
   }
 
-  const url = `https://googleads.googleapis.com/${GOOGLE_ADS_API_VERSION}/customers/${customerId}/conversionUploads:uploadClickConversions`;
+  const url = `https://googleads.googleapis.com/${GOOGLE_ADS_API_VERSION}/customers/${customerId}:uploadClickConversions`;
 
   try {
     const response = await axios.post(url, {
