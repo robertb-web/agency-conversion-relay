@@ -37,9 +37,21 @@ function buildCustomData(topic, payload) {
 
   if (topic.startsWith('checkouts/')) {
     const lineItems = payload.line_items || [];
+    let value = parseFloat(payload.total_price);
+    if (!value || value <= 0) {
+      value = lineItems.reduce((sum, item) => {
+        return sum + (parseFloat(item.price) || 0) * (parseInt(item.quantity, 10) || 1);
+      }, 0);
+    }
+    value = value > 0 ? value : 0;
+
+    const currency = (payload.currency && payload.currency.length === 3)
+      ? payload.currency
+      : 'USD';
+
     return {
-      value: parseFloat(payload.total_price) || 0,
-      currency: payload.currency || 'USD',
+      value,
+      currency,
       content_ids: lineItems.map(item => String(item.product_id)),
       content_type: 'product',
       num_items: lineItems.length
@@ -62,4 +74,24 @@ function buildCustomData(topic, payload) {
   return {};
 }
 
-module.exports = { SHOPIFY_TOPIC_MAP, resolveShopifyEvent, buildCustomData };
+/**
+ * Generates a deterministic event_id from Shopify payload for Meta deduplication.
+ * Returns null if no stable identifier is available (caller should fall back to UUID).
+ */
+function generateShopifyEventId(topic, payload) {
+  if (topic.startsWith('orders/') && payload.id) {
+    return `shopify_order_${payload.id}`;
+  }
+  if (topic.startsWith('checkouts/') && payload.token) {
+    return `shopify_checkout_${payload.token}`;
+  }
+  if (topic === 'carts/update' && payload.token) {
+    return `shopify_cart_${payload.token}`;
+  }
+  if (topic === 'customers/create' && payload.id) {
+    return `shopify_customer_${payload.id}`;
+  }
+  return null;
+}
+
+module.exports = { SHOPIFY_TOPIC_MAP, resolveShopifyEvent, buildCustomData, generateShopifyEventId };

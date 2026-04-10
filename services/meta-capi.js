@@ -22,8 +22,8 @@ async function sendMetaEvent(client, payload, eventMapping, options = {}) {
   const attr = payload.contact?.attributionSource || {};
   const hashedUserData = buildHashedUserData(payload);
 
-  // Build deduplication event ID
-  const eventId = uuidv4();
+  // Build deduplication event ID (use deterministic ID from caller when available)
+  const eventId = options.event_id || uuidv4();
 
   // Determine action_source and event_source_url
   const rawEventSourceUrl = attr.referrer || attr.sessionSourceUrl || attr.url || undefined;

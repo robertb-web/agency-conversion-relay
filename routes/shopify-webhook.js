@@ -5,7 +5,7 @@ const { getClientById, insertEvent } = require('../db/database');
 const { sendMetaEvent } = require('../services/meta-capi');
 const { sendGA4Event } = require('../services/ga4');
 const { sendGoogleAdsConversion } = require('../services/google-ads');
-const { resolveShopifyEvent, buildCustomData } = require('../services/shopify-mapper');
+const { resolveShopifyEvent, buildCustomData, generateShopifyEventId } = require('../services/shopify-mapper');
 const { normalizeShopifyPayload } = require('../services/shopify-hasher');
 const { buildHashedUserData } = require('../services/hasher');
 
@@ -97,7 +97,8 @@ async function processShopifyWebhook(client, topic, payload) {
     conversionValue: customData.value || 0,
     currencyCode: customData.currency || 'USD',
     testEventCode: client.meta_test_event_code || null,
-    custom_data: Object.keys(customData).length > 0 ? customData : undefined
+    custom_data: Object.keys(customData).length > 0 ? customData : undefined,
+    event_id: generateShopifyEventId(topic, payload)
   };
 
   // Fire all APIs
